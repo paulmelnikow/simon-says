@@ -1,0 +1,96 @@
+#!/bin/zsh
+
+simon-says-appledoc-install () {
+  local force=false
+  if [[ $1 == --force ]]; then
+    force=true
+  fi
+
+  if $force || (( ! $+commands[appledoc] )); then
+    local version="v2.2-963"
+    local src="https://github.com/tomaz/appledoc/releases/download/${version}/appledoc.zip"
+    local target=$(mktemp -d -t appledoc)
+
+    curl -sSL "$src" -o "$target/appledoc.zip" || return $status
+    unzip -qq "$target/appledoc.zip" -d "$target" || return $status
+
+    cp "$target/appledoc" "/usr/local/bin" 2>&1 || return $status
+    cp -Rf "$target/Templates/" "$HOME/.appledoc" 2>&1 || return $status
+  else
+    print 'Appledoc is already installed.' 2>&1
+    return 0
+  fi
+}
+
+simon-says-appledoc-test () {
+  local defaults=""
+  if [[ $# -lt 1 ]]; then
+    defaults="."
+  fi
+
+  appledoc --project-name Test --project-company Test --company-id 'test.test' \
+    -o /tmp \
+    "$defaults" "$@"
+}
+
+simon-says-appledoc () {
+  local subcmd="$1"
+  if [[ -z "$subcmd" ]]; then
+    echo 'simon-says: That requires a subcommand' >&2
+    return 1
+  fi
+  shift
+
+  if (( $+functions[simon-says-appledoc-$subcmd] )); then
+    "simon-says-appledoc-$subcmd" "$@"
+  else
+    echo "simon-says: Unknown subcommand: $subcmd" >&2
+  fi
+}
+
+simon-says-prepare () {
+  # Use when Travis-installed ruby won't run latest cocoapods.
+  # - rvm get stable --auto-dotfiles
+  # - rvm install 2.2
+
+  gem install cocoapods || return $status
+  pod repo update || return $status
+
+  gem install xcpretty || return $status
+
+  # https://github.com/travis-ci/travis-ci/issues/7031
+  echo y | fastlane snapshot reset_simulators || return $status
+}
+
+simon-says-test () {
+  local workspace="$1"
+  local scheme="$2"
+  local destination="$3"
+
+  if [[ $# -ne 3 ]]; then
+    echo 'Usage: simon-says test workspace scheme destination' >&2
+    return 1
+  fi
+
+  set -o pipefail
+
+  xcodebuild test -destination "$destination" -workspace "$workspace" -scheme "$scheme" |
+    xcpretty -c
+}
+
+simon-says () {
+  local cmd="$1"
+  if [[ -z "$cmd" ]]; then
+    echo 'simon-says: Please give a command to run.' >&2
+    return 1
+  fi
+  shift
+
+  if (( $+functions[simon-says-$cmd] )); then
+    "simon-says-$cmd" "$@"
+  else
+    echo "simon-says: Unknown command: $cmd" >&2
+  fi
+}
+
+simon-says "$@"
