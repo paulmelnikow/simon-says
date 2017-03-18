@@ -7,15 +7,16 @@ simon-says-appledoc-install () {
   fi
 
   if $force || (( ! $+commands[appledoc] )); then
-    local version="v2.2-963"
-    local src="https://github.com/tomaz/appledoc/releases/download/${version}/appledoc.zip"
+    local src="https://github.com/tomaz/appledoc/releases/download/2.2.1/appledoc-2.2.1.zip"
     local target=$(mktemp -d -t appledoc)
 
     curl -sSL "$src" -o "$target/appledoc.zip" || return $status
     unzip -qq "$target/appledoc.zip" -d "$target" || return $status
 
-    cp "$target/appledoc" "/usr/local/bin" 2>&1 || return $status
-    cp -Rf "$target/Templates/" "$HOME/.appledoc" 2>&1 || return $status
+    cp "$target/appledoc/appledoc" "/usr/local/bin" 2>&1 || return $status
+    cp -Rf "$target/appledoc/Templates/" "$HOME/.appledoc" 2>&1 || return $status
+
+    print 'Installed successfully.' 2>&1
   else
     print 'Appledoc is already installed.' 2>&1
     return 0
