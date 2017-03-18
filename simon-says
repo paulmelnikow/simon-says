@@ -24,10 +24,11 @@ simon-says-appledoc-install () {
 }
 
 simon-says-appledoc-test () {
-  local defaults=""
+  local defaults="$1"
   if [[ $# -lt 1 ]]; then
     defaults="."
   fi
+  shift
 
   appledoc --project-name Test --project-company Test --company-id 'test.test' \
     -o /tmp \
